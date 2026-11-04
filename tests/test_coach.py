@@ -38,6 +38,23 @@ def test_library_rejects_empty(tmp_path):
         lib.save("   ", "system")
 
 
+# ---------- API key ----------
+
+def test_api_key_read_from_environment(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "  sk-ant-test  ")
+    assert config.get_api_key() == "sk-ant-test"
+
+
+@pytest.mark.parametrize("value", [None, "", "   "])
+def test_missing_api_key_raises(monkeypatch, value):
+    if value is None:
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    else:
+        monkeypatch.setenv("ANTHROPIC_API_KEY", value)
+    with pytest.raises(config.MissingAPIKeyError, match="ANTHROPIC_API_KEY"):
+        config.get_api_key()
+
+
 # ---------- validation ----------
 
 def test_validate_run_prompt():

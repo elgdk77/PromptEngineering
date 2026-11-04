@@ -5,7 +5,30 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+# Load variables from a .env file in the project root, if there is one. Variables
+# already set in the real environment take precedence over the file.
+load_dotenv(PROJECT_ROOT / ".env", override=False)
+
+
+class MissingAPIKeyError(RuntimeError):
+    """ANTHROPIC_API_KEY is not set."""
+
+
+def get_api_key() -> str:
+    """Return the Anthropic API key from the ANTHROPIC_API_KEY environment variable."""
+    key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    if not key:
+        raise MissingAPIKeyError(
+            "ANTHROPIC_API_KEY is not set. Export it in your shell "
+            "(export ANTHROPIC_API_KEY=sk-ant-...) or add it to a .env file in "
+            f"{PROJECT_ROOT}, then start the server again."
+        )
+    return key
+
 
 # Model that runs the coaching agent itself.
 AGENT_MODEL = os.environ.get("PROMPT_COACH_MODEL", "claude-opus-5-5")

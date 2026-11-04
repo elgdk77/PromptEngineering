@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 import uuid
 from collections.abc import AsyncIterator
 
@@ -20,9 +21,14 @@ STATIC_DIR = config.PROJECT_ROOT / "static"
 
 app = FastAPI(title="Prompt Coach")
 
-# The client resolves credentials from the environment (ANTHROPIC_API_KEY,
-# ANTHROPIC_AUTH_TOKEN, or an `ant auth login` profile) on each request.
-client = anthropic.AsyncAnthropic()
+# The API key comes from the ANTHROPIC_API_KEY environment variable (or .env).
+# Refuse to start without it rather than failing on the first chat message.
+try:
+    API_KEY = config.get_api_key()
+except config.MissingAPIKeyError as e:
+    sys.exit(f"Error: {e}")
+
+client = anthropic.AsyncAnthropic(api_key=API_KEY)
 library = PromptLibrary(config.LIBRARY_PATH)
 agent = Agent(client, ToolExecutor(client, library))
 

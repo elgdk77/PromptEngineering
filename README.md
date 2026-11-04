@@ -35,15 +35,19 @@ export ANTHROPIC_API_KEY=sk-ant-...
 
 Then open http://localhost:8000.
 
-Instead of `ANTHROPIC_API_KEY`, you can sign in with `ant auth login`; the SDK
-picks up that profile automatically.
+The app reads your key from the `ANTHROPIC_API_KEY` environment variable. Instead
+of exporting it in every shell, you can put it in a `.env` file in the project
+root (copy [.env.example](.env.example)); `.env` is ignored by git. A variable
+set in the shell wins over the same one in `.env`. If no key is set, the server
+refuses to start and says so.
 
 ## Configuration
 
-All settings are environment variables:
+All settings are environment variables (or `.env` entries):
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
+| `ANTHROPIC_API_KEY` | required | Your Anthropic API key |
 | `PROMPT_COACH_MODEL` | `claude-opus-5-5` | Model that runs the coaching agent |
 | `PROMPT_COACH_TARGET_MODEL` | same as above | Model that test runs and token counts target; set it to the model your prompt will ship on |
 | `PROMPT_COACH_EFFORT` | `high` | The agent's reasoning effort (`low` to `max`) |

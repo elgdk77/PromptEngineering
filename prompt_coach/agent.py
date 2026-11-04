@@ -232,7 +232,7 @@ class Agent:
 def describe_api_error(exc: Exception) -> str:
     """A user-facing message for an exception raised out of the agent loop."""
     if isinstance(exc, anthropic.AuthenticationError):
-        return "Authentication failed. Set ANTHROPIC_API_KEY (or run `ant auth login`) and restart the server."
+        return "The API rejected the key in ANTHROPIC_API_KEY. Check it and restart the server."
     if isinstance(exc, anthropic.PermissionDeniedError):
         return "This API key does not have access to the requested model."
     if isinstance(exc, anthropic.NotFoundError):
@@ -247,8 +247,6 @@ def describe_api_error(exc: Exception) -> str:
         return f"API error ({exc.status_code}): {exc.message}"
     if isinstance(exc, anthropic.APIConnectionError):
         return "Could not reach the Anthropic API. Check your network connection."
-    if isinstance(exc, TypeError) and "authentication" in str(exc).lower():
-        return "No Anthropic credentials found. Set ANTHROPIC_API_KEY (or run `ant auth login`) and restart the server."
     return f"Unexpected error: {exc}"
 
 
