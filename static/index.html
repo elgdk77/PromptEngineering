@@ -32,7 +32,7 @@
       <div class="messages" id="messages" aria-live="polite">
         <section class="empty" id="empty">
           <h1>Write prompts that work</h1>
-          <p>Paste a prompt to improve, describe a task to build one for, or ask about a technique. Prompt Coach drafts, tests drafts against Claude on real inputs, and iterates.</p>
+          <p>Paste a prompt to improve, describe a task to build one for, or ask about a technique. Prompt Coach diagnoses what's wrong and writes you a better prompt, ready to copy.</p>
           <div class="starters" id="starters">
             <button class="starter" data-text="Here's a prompt I use that gives inconsistent results. Can you diagnose and fix it?&#10;&#10;">
               <strong>Fix a prompt</strong><span>Diagnose inconsistent or wrong outputs</span>
@@ -40,8 +40,8 @@
             <button class="starter" data-text="Help me write a system prompt for a customer support assistant for a software product. ">
               <strong>Write a system prompt</strong><span>Start from a task description</span>
             </button>
-            <button class="starter" data-text="I need a prompt that classifies support tickets into categories and returns JSON. Help me build and test it.">
-              <strong>Build a classifier</strong><span>Structured output, tested on examples</span>
+            <button class="starter" data-text="I need a prompt that classifies support tickets into categories and returns JSON. Help me write it.">
+              <strong>Build a classifier</strong><span>Structured output your code can parse</span>
             </button>
             <button class="starter" data-text="When should I use few-shot examples versus just describing what I want?">
               <strong>Ask about a technique</strong><span>Examples, XML tags, thinking, roles</span>
@@ -56,7 +56,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
         </button>
       </form>
-      <p class="hint">Enter to send · Shift+Enter for a new line · test runs use your API credits</p>
+      <p class="hint">Enter to send · Shift+Enter for a new line</p>
     </main>
 
     <aside class="library" id="library" aria-label="Prompt library">

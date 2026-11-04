@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 from types import SimpleNamespace as NS
 
 import pytest
@@ -11,7 +10,8 @@ import pytest
 from prompt_coach import config
 from prompt_coach.agent import Agent, Session, content_for_history
 from prompt_coach.library import PromptLibrary
-from prompt_coach.tools import ToolExecutor, ToolInputError, validate_input
+from prompt_coach.prompts import SYSTEM_PROMPT
+from prompt_coach.tools import TOOLS, ToolExecutor, ToolInputError, validate_input
 
 
 # ---------- library ----------
@@ -57,25 +57,28 @@ def test_missing_api_key_raises(monkeypatch, value):
 
 # ---------- validation ----------
 
-def test_validate_run_prompt():
-    args = validate_input(
-        "run_prompt",
-        {"label": "v1", "system_prompt": "", "test_inputs": ["a"], "user_template": "Q: {{input}}"},
-    )
-    assert args["effort"] is None and args["user_template"] == "Q: {{input}}"
+def test_agent_has_no_tool_that_runs_prompts():
+    assert {t["name"] for t in TOOLS} == {"count_tokens", "save_prompt", "list_prompts", "get_prompt"}
+    with pytest.raises(ToolInputError, match="Unknown tool"):
+        validate_input("run_prompt", {"system_prompt": "", "test_inputs": ["a"]})
+    # The system prompt tells the agent to write prompts, not carry them out.
+    assert "You write prompts; you do not run them." in SYSTEM_PROMPT
+    assert "run_prompt" not in SYSTEM_PROMPT
+
+
+def test_validate_save_prompt():
+    args = validate_input("save_prompt", {"name": "Bot", "system_prompt": "Be brief."})
+    assert args == {"name": "Bot", "system_prompt": "Be brief.", "user_template": "", "notes": ""}
 
     bad = [
-        {"label": "v1", "system_prompt": "", "test_inputs": []},
-        {"label": "v1", "system_prompt": "", "test_inputs": ["a"] * (config.MAX_TEST_INPUTS + 1)},
-        {"label": "v1", "system_prompt": "", "test_inputs": ["a"], "user_template": "no placeholder"},
-        {"label": "v1", "system_prompt": 3, "test_inputs": ["a"]},
-        {"label": "v1", "system_prompt": "", "test_inputs": ["a"], "effort": "extreme"},
-        {"label": "v1", "system_prompt": "", "test_inputs": ["a"], "extra": 1},
+        {"system_prompt": "x"},                       # missing name
+        {"name": "Bot", "system_prompt": 3},          # wrong type
+        {"name": "Bot", "system_prompt": "x", "extra": 1},
         "not an object",
     ]
     for args in bad:
         with pytest.raises(ToolInputError):
-            validate_input("run_prompt", args)
+            validate_input("save_prompt", args)
 
 
 def test_content_for_history_drops_pre_fallback_internal_blocks():
@@ -118,7 +121,11 @@ class FakeStream:
 
 
 class FakeClient:
-    """Agent requests get scripted replies; run_prompt test calls get an echo."""
+    """Returns scripted replies to the agent's own requests.
+
+    The agent must never send a user's prompt to a model, so every model request
+    has to be an agent turn (one that carries the agent's tools).
+    """
 
     def __init__(self, script):
         self.script = list(script)
@@ -126,24 +133,20 @@ class FakeClient:
         self.beta = NS(messages=NS(stream=self._stream))
 
     def _stream(self, **params):
-        if "tools" in params:  # an agent request
-            # Snapshot: the agent keeps appending to the same history list.
-            self.agent_requests.append({**params, "messages": list(params["messages"])})
-            return self.script.pop(0)
-        text = params["messages"][0]["content"]
-        reply = _msg([NS(type="text", text=f"echo: {text}")], "end_turn")
-        return FakeStream(reply, [])
+        assert "tools" in params, "a model request other than an agent turn was made"
+        # Snapshot: the agent keeps appending to the same history list.
+        self.agent_requests.append({**params, "messages": list(params["messages"])})
+        return self.script.pop(0)
 
 
 def test_agent_runs_tool_then_answers(tmp_path):
     tool_block = NS(
-        type="tool_use", id="tu_1", name="run_prompt",
-        input={"label": "v1", "system_prompt": "Be brief.", "user_template": "Q: {{input}}",
-               "test_inputs": ["hi", "bye"]},
+        type="tool_use", id="tu_1", name="save_prompt",
+        input={"name": "Summarizer", "system_prompt": "Summarize in 3 bullets.", "notes": "v1"},
     )
     first = FakeStream(
         _msg([NS(type="thinking", thinking="plan"), tool_block], "tool_use"),
-        [NS(type="content_block_start", content_block=NS(type="tool_use", id="tu_1", name="run_prompt"))],
+        [NS(type="content_block_start", content_block=NS(type="tool_use", id="tu_1", name="save_prompt"))],
     )
     final_text = NS(type="text", text="Looks good.")
     second = FakeStream(
@@ -152,26 +155,30 @@ def test_agent_runs_tool_then_answers(tmp_path):
          NS(type="content_block_delta", delta=NS(type="text_delta", text="Looks good."))],
     )
     client = FakeClient([first, second])
-    agent = Agent(client, ToolExecutor(client, PromptLibrary(tmp_path / "p.json")))
+    library = PromptLibrary(tmp_path / "p.json")
+    agent = Agent(client, ToolExecutor(client, library))
     session = Session()
 
     async def collect():
-        return [e async for e in agent.run_turn(session, "test my prompt")]
+        return [e async for e in agent.run_turn(session, "save my prompt")]
 
     events = asyncio.run(collect())
     types = [e["type"] for e in events]
-    assert types == ["tool_pending", "tool_call", "tool_result", "text_start", "text_delta", "done"]
+    assert types == [
+        "tool_pending", "tool_call", "tool_result", "library_changed",
+        "text_start", "text_delta", "done",
+    ]
 
     result = next(e for e in events if e["type"] == "tool_result")
     assert not result["is_error"]
-    assert [r["output"] for r in result["data"]["runs"]] == ["echo: Q: hi", "echo: Q: bye"]
+    assert library.get("Summarizer").latest.system_prompt == "Summarize in 3 bullets."
 
     # History: user, assistant(tool_use), user(tool_result), assistant(text)
     roles = [m["role"] for m in session.messages]
     assert roles == ["user", "assistant", "user", "assistant"]
     tool_results = session.messages[2]["content"]
     assert tool_results[0]["tool_use_id"] == "tu_1"
-    assert json.loads(tool_results[0]["content"])["label"] == "v1"
+    assert "version 1" in tool_results[0]["content"]
 
     # Second request carried the full history and the fallback opt-in.
     req = client.agent_requests[1]
@@ -181,7 +188,7 @@ def test_agent_runs_tool_then_answers(tmp_path):
 
 
 def test_agent_answers_invalid_tool_input_with_error(tmp_path):
-    bad = NS(type="tool_use", id="tu_x", name="run_prompt", input={"label": "v1"})
+    bad = NS(type="tool_use", id="tu_x", name="save_prompt", input={"notes": "v1"})
     first = FakeStream(_msg([bad], "tool_use"), [])
     second = FakeStream(_msg([NS(type="text", text="ok")], "end_turn"), [])
     client = FakeClient([first, second])

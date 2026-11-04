@@ -32,8 +32,8 @@ def get_api_key() -> str:
 
 # Model that runs the coaching agent itself.
 AGENT_MODEL = os.environ.get("PROMPT_COACH_MODEL", "claude-opus-5-5")
-# Model that the agent's test runs (run_prompt / count_tokens) target. Set this to
-# the model your prompt will actually ship on.
+# Model that count_tokens measures against. Set this to the model your prompt
+# will actually ship on.
 TARGET_MODEL = os.environ.get("PROMPT_COACH_TARGET_MODEL", AGENT_MODEL)
 # Effort for the agent's own reasoning (low | medium | high | xhigh | max).
 AGENT_EFFORT = os.environ.get("PROMPT_COACH_EFFORT", "high")
@@ -47,7 +47,3 @@ LIBRARY_PATH = DATA_DIR / "prompts.json"
 
 # Safety valve on the agent loop: model requests per user turn.
 MAX_AGENT_ITERATIONS = 25
-# Upper bounds on a single run_prompt call.
-MAX_TEST_INPUTS = 10
-TEST_CONCURRENCY = 5
-TEST_MAX_TOKENS = 8000

@@ -170,17 +170,6 @@ button { font: inherit; color: inherit; }
 .tool-body { border-top: 1px solid var(--border); padding: 10px 14px; font-size: 14px; }
 .tool-body:empty { display: none; }
 .tool-error { color: var(--err); white-space: pre-wrap; }
-.run { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; background: var(--bg); }
-.run:last-child { margin-bottom: 0; }
-.run summary { cursor: pointer; padding: 8px 10px; display: flex; gap: 8px; align-items: baseline; list-style: none; }
-.run summary::-webkit-details-marker { display: none; }
-.run summary .n { font: 500 12px var(--mono); color: var(--muted); flex-shrink: 0; }
-.run summary .in { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
-.run summary .meta { font: 12px var(--mono); color: var(--muted); flex-shrink: 0; }
-.run .run-body { padding: 0 10px 10px; display: grid; gap: 8px; }
-.run .label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-.run pre { margin: 2px 0 0; white-space: pre-wrap; word-break: break-word; font: 13px/1.5 var(--mono); background: var(--code-bg); padding: 8px 10px; border-radius: 6px; max-height: 360px; overflow: auto; }
-.run.failed summary .meta { color: var(--err); }
 
 .notice { font-size: 13px; color: var(--muted); padding: 8px 12px; border-radius: 8px; background: var(--surface-2); }
 .notice.error { color: var(--err); background: var(--err-soft); }

@@ -5,7 +5,8 @@
       "name": "prompt-coach",
       "runtimeExecutable": ".venv/bin/uvicorn",
       "runtimeArgs": ["prompt_coach.server:app", "--port", "8000"],
-      "port": 8000
+      "port": 8000,
+      "env": { "ANTHROPIC_API_KEY": "sk-ant-placeholder-for-ui-preview" }
     }
   ]
 }

@@ -2,9 +2,12 @@
 
 An AI agent that helps you write, debug and improve prompts. Paste a prompt that
 misbehaves, describe a task you need a prompt for, or ask about a technique. The
-agent diagnoses the problems, drafts an improved version, **runs the draft against
-Claude on realistic test inputs**, reads the real outputs, and iterates until the
-prompt does the job.
+agent diagnoses the problems and writes you a new or improved prompt, ready to
+copy, with an explanation of what changed.
+
+The agent only writes prompts. It never runs them or shows what a model would
+answer: if you paste "Summarize this article: …", you get a better summarization
+prompt back, not a summary.
 
 Built on the [Claude API](https://platform.claude.com/docs) with the official
 `anthropic` Python SDK, FastAPI, and a dependency-free web UI.
@@ -13,13 +16,11 @@ Built on the [Claude API](https://platform.claude.com/docs) with the official
 
 | Tool | Purpose |
 | --- | --- |
-| `run_prompt` | Run a system prompt and/or user template (with an `{{input}}` placeholder) on up to 10 test inputs in parallel, and return the actual outputs |
-| `count_tokens` | Measure a prompt's input token count on the target model |
+| `count_tokens` | Measure a prompt's input token count on the target model (size only; the prompt is not run) |
 | `save_prompt` / `list_prompts` / `get_prompt` | Keep a versioned library of your prompts on disk |
 
-The UI streams the agent's reasoning summary, its responses, and each test run
-(expand a run to see the input and output side by side). Every code block has
-**Copy** and **Save** buttons, and the library panel shows saved prompts with
+The UI streams the agent's reasoning summary and its responses. Every code block
+has **Copy** and **Save** buttons, and the library panel shows saved prompts with
 their version history.
 
 ## Run it
@@ -49,18 +50,16 @@ All settings are environment variables (or `.env` entries):
 | --- | --- | --- |
 | `ANTHROPIC_API_KEY` | required | Your Anthropic API key |
 | `PROMPT_COACH_MODEL` | `claude-opus-5-5` | Model that runs the coaching agent |
-| `PROMPT_COACH_TARGET_MODEL` | same as above | Model that test runs and token counts target; set it to the model your prompt will ship on |
+| `PROMPT_COACH_TARGET_MODEL` | same as above | Model that token counts are measured on; set it to the model your prompt will ship on |
 | `PROMPT_COACH_EFFORT` | `high` | The agent's reasoning effort (`low` to `max`) |
 | `PROMPT_COACH_DATA_DIR` | `./data` | Where the prompt library (`prompts.json`) is stored |
 
 ## Costs
 
-The agent's own turns and every `run_prompt` call use your API credits. The
-agent is instructed to test with 2–5 inputs per run unless you ask for more, and
-each run is capped at 10 inputs and 8,000 output tokens per input. The system
-prompt and conversation are prompt-cached, so long sessions re-read earlier
-context at the cached rate. Token usage for each agent turn is shown under the
-response (test runs are not included in that figure).
+Each agent turn uses your API credits; nothing else calls a model (token
+counting is free). The system prompt and conversation are prompt-cached, so long
+sessions re-read earlier context at the cached rate. Token usage for each agent
+turn is shown under the response.
 
 ## How it works
 
@@ -73,7 +72,8 @@ response (test runs are not included in that figure).
 - Tool inputs stream as they are generated (`eager_input_streaming`), so every
   input is validated in `prompt_coach/tools.py` before a tool runs.
 - `prompt_coach/prompts.py` holds the agent's system prompt, which carries its
-  prompt engineering playbook.
+  prompt engineering playbook and the rule that it writes prompts rather than
+  carrying them out.
 - `prompt_coach/server.py` serves the UI and streams each agent turn to the
   browser as server-sent events. Conversations are held in memory and reset when
   the server restarts. The prompt library persists on disk.

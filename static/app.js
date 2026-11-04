@@ -181,14 +181,13 @@ class TurnView {
       this.root.append(el("div", {
         class: "usage",
         text: `${totalIn.toLocaleString()} in (${usage.cache_read_input_tokens.toLocaleString()} cached) · ${usage.output_tokens.toLocaleString()} out`,
-        title: "Tokens used by the coach this turn (test runs not included)",
+        title: "Tokens used by the coach this turn",
       }));
     }
   }
 }
 
 const TOOL_TITLES = {
-  run_prompt: "Testing prompt",
   count_tokens: "Counting tokens",
   save_prompt: "Saving to library",
   list_prompts: "Listing library",
@@ -209,10 +208,7 @@ class ToolCard {
   }
 
   setInput(input) {
-    if (this.name === "run_prompt" && input) {
-      const n = Array.isArray(input.test_inputs) ? input.test_inputs.length : 0;
-      this.sub.textContent = `${input.label || ""} · ${n} input${n === 1 ? "" : "s"}`;
-    } else if (input?.name) {
+    if (input?.name) {
       this.sub.textContent = input.name;
     }
   }
@@ -221,10 +217,7 @@ class ToolCard {
     this.root.classList.remove("running");
     this.root.classList.add(ev.is_error ? "error" : "ok");
     const d = ev.data;
-    if (this.name === "run_prompt" && d && d.runs) {
-      this.sub.textContent = `${d.label} · ${d.runs.length} input${d.runs.length === 1 ? "" : "s"} · ${d.model}`;
-      d.runs.forEach((r, i) => this.body.append(runView(r, i)));
-    } else if (ev.is_error) {
+    if (ev.is_error) {
       this.body.append(el("div", { class: "tool-error", text: ev.content }));
     } else if (this.name === "count_tokens" && d) {
       this.sub.textContent = `${d.input_tokens.toLocaleString()} input tokens on ${d.model}`;
@@ -244,23 +237,6 @@ class ToolCard {
       this.sub.textContent = "not run";
     }
   }
-}
-
-function runView(r, i) {
-  const failed = !!r.error;
-  let meta = failed ? "error" : `${r.output_tokens} tok`;
-  if (r.stop_reason === "refusal") meta = "refused";
-  else if (r.stop_reason === "max_tokens") meta += " · cut off";
-  const body = el("div", { class: "run-body" },
-    el("div", {}, el("div", { class: "label", text: "Input" }), el("pre", { text: r.input })),
-    el("div", {}, el("div", { class: "label", text: failed ? "Error" : "Output" }),
-      el("pre", { text: failed ? r.error : (r.output || "(empty)") })));
-  return el("details", { class: "run" + (failed ? " failed" : "") },
-    el("summary", {},
-      el("span", { class: "n", text: `#${i + 1}` }),
-      el("span", { class: "in", text: truncate(r.input.replace(/\s+/g, " "), 120) }),
-      el("span", { class: "meta", text: meta })),
-    body);
 }
 
 /* ---------- sending ---------- */
