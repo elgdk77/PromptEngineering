@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prompt Coach</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23c2562f'/%3E%3Cpath d='M9 11l5 5-5 5M16 21h7' stroke='white' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" rx="8"/><path d="M9 11l5 5-5 5M16 21h7"/></svg>
+      </span>
+      <span class="brand-name">Prompt Coach</span>
+      <span class="model-chip" id="model-chip" title="Agent model"></span>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn ghost" id="library-toggle" aria-controls="library" aria-expanded="false">Library</button>
+      <button class="btn" id="new-chat">New chat</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main class="chat" id="chat">
+      <div class="messages" id="messages" aria-live="polite">
+        <section class="empty" id="empty">
+          <h1>Write prompts that work</h1>
+          <p>Paste a prompt to improve, describe a task to build one for, or ask about a technique. Prompt Coach drafts, tests drafts against Claude on real inputs, and iterates.</p>
+          <div class="starters" id="starters">
+            <button class="starter" data-text="Here's a prompt I use that gives inconsistent results. Can you diagnose and fix it?&#10;&#10;">
+              <strong>Fix a prompt</strong><span>Diagnose inconsistent or wrong outputs</span>
+            </button>
+            <button class="starter" data-text="Help me write a system prompt for a customer support assistant for a software product. ">
+              <strong>Write a system prompt</strong><span>Start from a task description</span>
+            </button>
+            <button class="starter" data-text="I need a prompt that classifies support tickets into categories and returns JSON. Help me build and test it.">
+              <strong>Build a classifier</strong><span>Structured output, tested on examples</span>
+            </button>
+            <button class="starter" data-text="When should I use few-shot examples versus just describing what I want?">
+              <strong>Ask about a technique</strong><span>Examples, XML tags, thinking, roles</span>
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <form class="composer" id="composer">
+        <textarea id="input" rows="1" placeholder="Paste a prompt or describe what you need…" aria-label="Message"></textarea>
+        <button class="btn primary send" id="send" type="submit" aria-label="Send">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+        </button>
+      </form>
+      <p class="hint">Enter to send · Shift+Enter for a new line · test runs use your API credits</p>
+    </main>
+
+    <aside class="library" id="library" aria-label="Prompt library">
+      <div class="library-head">
+        <h2>Prompt library</h2>
+        <button class="btn ghost small close-library" id="library-close" aria-label="Close library">✕</button>
+      </div>
+      <ul class="library-list" id="library-list"></ul>
+      <p class="library-empty" id="library-empty">Saved prompts appear here. Ask the coach to save one, or use “Save” on any code block.</p>
+    </aside>
+  </div>
+
+  <dialog id="prompt-dialog">
+    <form method="dialog" class="dialog-body" id="prompt-dialog-form">
+      <div class="dialog-head">
+        <h3 id="dialog-title"></h3>
+        <select id="dialog-version" aria-label="Version"></select>
+      </div>
+      <div id="dialog-content"></div>
+      <div class="dialog-actions" id="dialog-actions"></div>
+    </form>
+  </dialog>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
