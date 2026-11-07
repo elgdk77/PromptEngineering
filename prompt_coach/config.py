@@ -45,5 +45,13 @@ FALLBACK_BETA = "server-side-fallback-2026-07-01"
 DATA_DIR = Path(os.environ.get("PROMPT_COACH_DATA_DIR", PROJECT_ROOT / "data"))
 LIBRARY_PATH = DATA_DIR / "prompts.json"
 
+# Hostnames the server answers to (comma-separated, ports ignored). Requests with
+# any other Host header are refused, which blocks DNS-rebinding attacks.
+ALLOWED_HOSTS = frozenset(
+    h.strip().lower()
+    for h in os.environ.get("PROMPT_COACH_ALLOWED_HOSTS", "localhost,127.0.0.1,[::1]").split(",")
+    if h.strip()
+)
+
 # Safety valve on the agent loop: model requests per user turn.
 MAX_AGENT_ITERATIONS = 25
