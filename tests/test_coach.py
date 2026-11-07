@@ -202,3 +202,60 @@ def test_agent_answers_invalid_tool_input_with_error(tmp_path):
     result = next(e for e in events if e["type"] == "tool_result")
     assert result["is_error"] and "Invalid input" in result["content"]
     assert session.messages[2]["content"][0]["is_error"] is True
+
+
+# ---------- local-only request checks ----------
+
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from prompt_coach.security import LocalOnlyMiddleware, hostname_of
+
+LOCAL_HOSTS = frozenset({"localhost", "127.0.0.1", "[::1]"})
+
+
+def _guarded_client() -> TestClient:
+    app = FastAPI()
+    app.add_middleware(LocalOnlyMiddleware, allowed_hosts=LOCAL_HOSTS)
+
+    @app.get("/r")
+    async def read():
+        return {"ok": True}
+
+    @app.post("/w")
+    async def write():
+        return {"ok": True}
+
+    return TestClient(app, base_url="http://localhost:8000")
+
+
+@pytest.mark.parametrize("header,expected", [
+    ("localhost:8000", "localhost"),
+    ("LocalHost", "localhost"),
+    ("127.0.0.1:8000", "127.0.0.1"),
+    ("[::1]:8000", "[::1]"),
+])
+def test_hostname_of(header, expected):
+    assert hostname_of(header) == expected
+
+
+def test_same_origin_requests_allowed():
+    c = _guarded_client()
+    assert c.get("/r").status_code == 200
+    assert c.post("/w", headers={"Origin": "http://localhost:8000"}).status_code == 200
+    assert c.post("/w").status_code == 200  # no Origin: non-browser client
+
+
+def test_rebound_host_refused():
+    c = _guarded_client()
+    rebound = {"Host": "evil.example:8000"}
+    assert c.get("/r", headers=rebound).status_code == 403
+    assert c.post("/w", headers=rebound).status_code == 403
+
+
+@pytest.mark.parametrize("origin", ["https://evil.example", "http://localhost:9999", "null"])
+def test_cross_origin_write_refused(origin):
+    c = _guarded_client()
+    assert c.post("/w", headers={"Origin": origin}).status_code == 403
+    # Reads stay allowed: the browser won't let the other site see the response.
+    assert c.get("/r", headers={"Origin": origin}).status_code == 200

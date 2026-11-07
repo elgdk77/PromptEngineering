@@ -15,11 +15,14 @@ from pydantic import BaseModel, Field
 from . import config
 from .agent import Agent, Session, describe_api_error, dumps_event
 from .library import PromptLibrary
+from .security import LocalOnlyMiddleware
 from .tools import ToolExecutor
 
 STATIC_DIR = config.PROJECT_ROOT / "static"
 
 app = FastAPI(title="Prompt Coach")
+# Refuse requests for unexpected hosts and cross-origin writes (see security.py).
+app.add_middleware(LocalOnlyMiddleware, allowed_hosts=config.ALLOWED_HOSTS)
 
 # The API key comes from the ANTHROPIC_API_KEY environment variable (or .env).
 # Refuse to start without it rather than failing on the first chat message.

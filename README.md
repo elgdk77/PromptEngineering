@@ -54,6 +54,13 @@ All settings are environment variables (or `.env` entries):
 | `PROMPT_COACH_TARGET_MODEL` | same as above | Model that token counts are measured on; set it to the model your prompt will ship on |
 | `PROMPT_COACH_EFFORT` | `high` | The agent's reasoning effort (`low` to `max`) |
 | `PROMPT_COACH_DATA_DIR` | `./data` | Where the prompt library (`prompts.json`) is stored |
+| `PROMPT_COACH_ALLOWED_HOSTS` | `localhost,127.0.0.1,[::1]` | Hostnames the server answers to (comma-separated, ports ignored); add yours if you reach it by another name |
+
+The server has no login, so it only answers requests addressed to the hosts
+above. For anything that changes data, it also refuses requests whose `Origin`
+header is another site. Together these stop other web pages, including ones
+using DNS rebinding, from reading your library or using your API credits
+through it.
 
 ## Costs
 
